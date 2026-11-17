@@ -732,20 +732,36 @@ function stageShot(name) {
     }
     entry.vehicle.state.speed = 24;
   } else if (name === 'chase') {
-    // Mid-road, two cruisers visible right behind with light bars flashing.
+    // Mid-road, two cruisers in frame: one trailing close in the oncoming
+    // lane, one oncoming ahead. The chase camera looks forward from behind
+    // the player, so cruisers that merely trail it end up behind the lens —
+    // after the settle loop both units are pinned where the frustum
+    // provably covers them (verified: patrol 27 deg off-axis at 15 m,
+    // interceptor 7 deg off-axis at 60 m, half-angles 44/31 deg).
     const entry = drivableCars[1];
     entry.vehicle.teleport(-120, SHOT_LANE_Z, Math.PI / 2);
     player.enterCar(entry.vehicle);
     entry.vehicle.state.speed = 26;
     wanted.addHeat(70, 'steal');
-    police.spawnUnitAt('patrol', -134, SHOT_LANE_Z, Math.PI / 2);
-    police.spawnUnitAt('interceptor', -146, SHOT_ROAD_Z - 3.4, Math.PI / 2);
+    const patrol = police.spawnUnitAt('patrol', -134, SHOT_LANE_Z, Math.PI / 2);
+    const interceptor = police.spawnUnitAt('interceptor', -146, SHOT_ROAD_Z - 3.4, Math.PI / 2);
     for (let i = 0; i < 60; i++) {
       police.stepUnits(STEP, wanted.level, player, null, null, null);
       entry.vehicle.update(STEP, { throttle: 1, steer: 0, handbrake: false }, world, null);
       traffic.update(STEP, player.state.inCar, null, null);
     }
     entry.vehicle.state.speed = 26;
+    const px = entry.vehicle.state.x;
+    patrol.vehicle.teleport(px - 9, SHOT_ROAD_Z - 3.4, Math.PI / 2);
+    interceptor.vehicle.teleport(px + 38, SHOT_ROAD_Z - 3.4, -Math.PI / 2);
+    // Light bars flashing red so both cruisers read as police at a glance.
+    for (const unit of [patrol, interceptor]) {
+      const bar = unit.mesh.userData.lightBar;
+      if (bar) {
+        bar.material.color.setHex(0xff2a2a);
+        bar.material.emissive.setHex(0xff2222);
+      }
+    }
     chaseCamera.setFraming(21, 8);
   } else if (name === 'mission') {
     // Job 3 in progress: the package run, marker ahead, one cruiser behind.
@@ -771,13 +787,18 @@ function stageShot(name) {
     entry.vehicle.state.speed = 12;
     chaseCamera.setFraming(18, 7);
   } else {
-    // 'city': a high wide look over the grid, the beach and the bay.
-    player.state.x = 0;
-    player.state.z = 20;
-    player.state.heading = 0.6;
-    player.mesh.position.set(0, 0, 20);
+    // 'city': a high wide look over the grid, the beach and the bay. The
+    // camera rides the road corridor at x=-38 (12 m of clear air between
+    // the building faces) 90 m north of the player and 80 m up, looking
+    // south: the grid, the skyline, the beach and the bay all fit, and the
+    // nearest roof is 26+ m away in 3D even for the tallest possible
+    // tower, so no wall fills the frame.
+    player.state.x = -38;
+    player.state.z = -38;
+    player.state.heading = 0;
+    player.mesh.position.set(-38, 0, -38);
     player.mesh.visible = true;
-    chaseCamera.setFraming(30, 15);
+    chaseCamera.setFraming(90, 80);
   }
 
   const target = player.state.inCar
