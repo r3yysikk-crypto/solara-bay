@@ -6,12 +6,20 @@ import { CAMERA } from './config.js';
 export function createCamera(camera) {
   let yaw = 0;
   let shake = 0;
+  let framing = null; // { distance, height } override, used by the shots
   const ideal = new THREE.Vector3();
   const look = new THREE.Vector3();
 
+  function framingFor(driving) {
+    if (framing) return framing;
+    return {
+      distance: driving ? CAMERA.driveDistance : CAMERA.footDistance,
+      height: driving ? CAMERA.driveHeight : CAMERA.footHeight,
+    };
+  }
+
   function update(dt, target, driving) {
-    const distance = driving ? CAMERA.driveDistance : CAMERA.footDistance;
-    const height = driving ? CAMERA.driveHeight : CAMERA.footHeight;
+    const { distance, height } = framingFor(driving);
     // The camera yaw eases toward the target's heading instead of snapping.
     let diff = target.heading - yaw;
     while (diff > Math.PI) diff -= Math.PI * 2;
@@ -38,15 +46,31 @@ export function createCamera(camera) {
     camera.lookAt(look);
   }
 
+  // The title screen's slow orbit over the city: the bay, the grid and the
+  // skyline, with no player standing in the panel's way.
+  function updateTitle(dt, time) {
+    const angle = time * 0.045;
+    const radius = 165;
+    camera.position.set(Math.sin(angle) * radius, 62, 40 + Math.cos(angle) * radius);
+    camera.lookAt(0, 4, 30);
+  }
+
   function snap(target, driving) {
-    const distance = driving ? CAMERA.driveDistance : CAMERA.footDistance;
-    const height = driving ? CAMERA.driveHeight : CAMERA.footHeight;
+    const { distance, height } = framingFor(driving);
     yaw = target.heading;
     camera.position.set(
       target.x - Math.sin(yaw) * distance,
       height,
       target.z - Math.cos(yaw) * distance,
     );
+  }
+
+  function setFraming(distance, height) {
+    framing = { distance, height };
+  }
+
+  function clearFraming() {
+    framing = null;
   }
 
   function addShake(amount) {
@@ -57,5 +81,5 @@ export function createCamera(camera) {
     return yaw;
   }
 
-  return { update, snap, addShake, getYaw };
+  return { update, updateTitle, snap, setFraming, clearFraming, addShake, getYaw };
 }

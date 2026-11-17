@@ -18,15 +18,15 @@ export const CITY = {
 };
 
 export const COLOURS = {
-  sky: 0x8ec9ee,
-  fog: 0xa8d4f0,
+  sky: 0x7fb8e8,
+  fog: 0x9fc8e8,
   sun: 0xfff2d8,
-  ground: 0x7fae62,
-  sand: 0xe8d49a,
-  water: 0x2f7fb8,
-  road: 0x3a3f46,
+  ground: 0x5f8f4a,
+  sand: 0xd9b878,
+  water: 0x2277aa,
+  road: 0x2e3238,
   roadLine: 0xf5d76e,
-  sidewalk: 0xb9b3a4,
+  sidewalk: 0x9c8460,
   buildingGlass: 0x9fc6e8,
 };
 
@@ -96,13 +96,64 @@ export const POLICE = {
   bustSeconds: 1.6, // seconds inside bust distance to get busted
   despawnDistance: 260, // units further than this from the player give up
   roadblockAtLevel: 3, // level that calls in a roadblock ahead of the player
+  // Shooting: from wanted level 2 up, units open fire when close enough.
+  shootAtLevel: 2,
+  shootRange: 46, // metres
+  shootCooldown: 1.6, // seconds between shots from one unit
+  shootDamage: 4, // health lost per hit
+  shootHitChance: 0.5, // base hit chance, worse at long range
+  unitHealth: 100, // a cruiser disabled when its health hits zero
+};
+
+// Combat: fists and a pistol, on foot only.
+export const COMBAT = {
+  pistolAmmo: 12, // rounds per magazine
+  pistolDamage: 34,
+  pistolRange: 60,
+  reloadSeconds: 1.2,
+  meleeDamage: 25,
+  meleeRange: 2.4,
+  meleeArc: 1.1, // radians off the facing direction
+  hostileHealth: 50,
+  hostileShootRange: 30,
+  hostileShootDamage: 4,
+  hostileCashDrop: 50,
+};
+
+// Missions: Mara Voss climbs the Solara Bay ladder, one job at a time.
+export const MISSIONS = {
+  rewards: [400, 600, 800, 1000, 1500],
+  raceTimeLimit: 100, // seconds for the checkpoint race
+  escapeTimeLimit: 120, // seconds to lose a 2-star wanted level
+  packageFailLevel: 3, // wanted level that fails the quiet package run
+};
+
+// Ten hidden packages pay for the hunt: each one is $150 cash.
+export const COLLECTIBLES = {
+  count: 10,
+  reward: 150,
+  pickupRadius: 2.6,
+};
+
+// Sunset Motors: three cars for sale on the lot by the beach. Buying one
+// makes it yours — no wanted heat for taking it, and it waits for you.
+export const GARAGE = {
+  cars: [
+    { id: 'sunray', name: 'Sunray GT', price: 800, colour: 0xf2c230, x: 148, z: 186, heading: Math.PI / 2 },
+    { id: 'marlin', name: 'Marlin S', price: 1200, colour: 0x2e6fd8, x: 156, z: 186, heading: Math.PI / 2 },
+    { id: 'viper', name: 'Viper X', price: 1800, colour: 0xd83a2e, x: 164, z: 186, heading: Math.PI / 2 },
+  ],
 };
 
 export const CAMERA = {
-  driveDistance: 11,
-  driveHeight: 4.6,
-  footDistance: 7,
-  footHeight: 3.2,
+  driveDistance: 13.5,
+  driveHeight: 5.6,
+  footDistance: 7.5,
+  footHeight: 3.4,
   smoothing: 5.5, // 1/s lerp toward the ideal spot
   lookAhead: 6,
+  // Wide framing used by the screenshot staging so the car, the road and
+  // the chase all fit in one picture.
+  shotDistance: 20,
+  shotHeight: 7.5,
 };

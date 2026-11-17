@@ -12,6 +12,16 @@ export function createPolice(world, random) {
   let roadblockTimer = 0;
 
   function spawnUnit(kind, near) {
+    return spawnUnitAt(
+      kind,
+      near.x + random.range(-30, 30),
+      near.z + random.range(-30, 30),
+      random.range(0, Math.PI * 2),
+    );
+  }
+
+  // Place a unit exactly where the staging or a mission wants it.
+  function spawnUnitAt(kind, x, z, heading) {
     const spec = kind === 'interceptor' ? POLICE.interceptor : POLICE.patrol;
     const lightBar = new THREE.MeshLambertMaterial({
       color: 0x2266ff,
@@ -20,11 +30,7 @@ export function createPolice(world, random) {
     });
     const mesh = createCarMesh(spec.colour, { lightBar, stripe: spec.livery });
     world.scene.add(mesh);
-    const vehicle = createVehicle(mesh, {
-      x: near.x + random.range(-30, 30),
-      z: near.z + random.range(-30, 30),
-      heading: random.range(0, Math.PI * 2),
-    });
+    const vehicle = createVehicle(mesh, { x, z, heading });
     vehicle.state.maxSpeed = spec.maxSpeed;
     vehicle.state.accel = spec.accel;
     const unit = {
@@ -35,10 +41,28 @@ export function createPolice(world, random) {
       lastX: vehicle.state.x,
       lastZ: vehicle.state.z,
       ramCooldown: 0,
+      shootCooldown: 1 + Math.random(),
       sirenPhase: random.range(0, 1),
+      health: POLICE.unitHealth,
+      disabled: false,
+      disabledTimer: 0,
     };
     units.push(unit);
     return unit;
+  }
+
+  // Shoot a cruiser up: it takes damage, smokes, and at zero it is done.
+  // Returns true when the unit was just disabled.
+  function damageUnit(unit, amount) {
+    if (unit.disabled) return false;
+    unit.health -= amount;
+    unit.vehicle.state.damage = Math.min(100, unit.vehicle.state.damage + amount);
+    if (unit.health <= 0) {
+      unit.disabled = true;
+      unit.disabledTimer = 4;
+      return true;
+    }
+    return false;
   }
 
   function removeUnit(unit) {
@@ -125,13 +149,12 @@ export function createPolice(world, random) {
     roadblock = null;
   }
 
-  function update(dt, wantedLevel, player, onRam, onBust) {
+  function update(dt, wantedLevel, player, onRam, onBust, onShoot) {
     syncUnits(wantedLevel, player);
     const playerCar = player.state.inCar;
     const playerPos = playerCar
       ? { x: playerCar.state.x, z: playerCar.state.z, heading: playerCar.state.heading }
       : { x: player.state.x, z: player.state.z, heading: player.state.heading };
-    const playerSpeed = playerCar ? playerCar.state.speed : 0;
 
     // Level 3 calls a roadblock ahead of the player, refreshed while it lasts.
     if (wantedLevel >= POLICE.roadblockAtLevel) {
@@ -148,6 +171,18 @@ export function createPolice(world, random) {
       if (roadblock.timer <= 0) clearRoadblock();
     }
 
+    stepUnits(dt, wantedLevel, player, onRam, onBust, onShoot);
+  }
+
+  // Step the units already on the road, without syncing the count — the
+  // screenshot staging uses this so the chase is exactly the units placed.
+  function stepUnits(dt, wantedLevel, player, onRam, onBust, onShoot) {
+    const playerCar = player.state.inCar;
+    const playerPos = playerCar
+      ? { x: playerCar.state.x, z: playerCar.state.z, heading: playerCar.state.heading }
+      : { x: player.state.x, z: player.state.z, heading: player.state.heading };
+    const playerSpeed = playerCar ? playerCar.state.speed : 0;
+
     for (const unit of [...units]) {
       const v = unit.vehicle.state;
       // A unit left far behind gives up and despawns.
@@ -156,7 +191,19 @@ export function createPolice(world, random) {
         removeUnit(unit);
         continue;
       }
+      // A disabled cruiser sits smoking until the tow truck takes it.
+      if (unit.disabled) {
+        unit.disabledTimer -= dt;
+        if (unit.disabledTimer <= 0) removeUnit(unit);
+        continue;
+      }
       unit.ramCooldown = Math.max(0, unit.ramCooldown - dt);
+      unit.shootCooldown = Math.max(0, unit.shootCooldown - dt);
+      // From wanted level 2 up, a unit close enough opens fire.
+      if (onShoot && wantedLevel >= POLICE.shootAtLevel && distToPlayer < POLICE.shootRange && unit.shootCooldown <= 0) {
+        unit.shootCooldown = POLICE.shootCooldown + Math.random() * 0.8;
+        onShoot(unit);
+      }
       const input = chaseInput(unit, playerPos, playerSpeed, dt);
       unit.vehicle.update(dt, input, world, null);
 
@@ -213,9 +260,12 @@ export function createPolice(world, random) {
   return {
     units,
     update,
+    stepUnits,
     nearestDistance,
     clearRoadblock,
     takeUnit,
     reset,
+    spawnUnitAt,
+    damageUnit,
   };
 }

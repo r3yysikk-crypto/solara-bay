@@ -27,9 +27,12 @@ export function createTraffic(world, random) {
   const cars = [];
   const pedestrians = [];
 
+  // Headings follow the car controller's convention: heading 0 faces +z,
+  // PI/2 faces +x. A car on an 'x' road travels along x, one on a 'z'
+  // road along z — never sideways across its own lane.
   function roadHeading(axis, lane) {
-    if (axis === 'x') return lane > 0 ? 0 : Math.PI;
-    return lane > 0 ? Math.PI / 2 : -Math.PI / 2;
+    if (axis === 'x') return lane > 0 ? Math.PI / 2 : -Math.PI / 2;
+    return lane > 0 ? 0 : Math.PI;
   }
 
   function spawnTrafficCar() {
@@ -52,6 +55,7 @@ export function createTraffic(world, random) {
       heading: roadHeading(line.axis, lane),
       speed: TRAFFIC.carSpeed + random.range(-TRAFFIC.carSpeedVariance, TRAFFIC.carSpeedVariance),
       targetSpeed: TRAFFIC.carSpeed,
+      health: 60, // shot up enough and the car gives up
       stuck: 0,
       stunTimer: 0,
       // A hard shunt stops the car for a while: it sits, hazards on, driver stunned.
@@ -99,7 +103,9 @@ export function createTraffic(world, random) {
     for (const other of cars) {
       if (other === car || other.axis !== car.axis || other.lane !== car.lane || Math.abs(other.lineAt - car.lineAt) > 0.5) continue;
       const gap = other.pos - car.pos;
-      const signed = car.axis === 'x' ? gap * Math.cos(car.heading) : gap * Math.sin(car.heading);
+      // Signed gap along the direction of travel: sin(heading) on x roads,
+      // cos(heading) on z roads.
+      const signed = car.axis === 'x' ? gap * Math.sin(car.heading) : gap * Math.cos(car.heading);
       if (signed > 0 && signed < nearestGap) {
         nearestGap = signed;
         nearest = other;
@@ -130,8 +136,8 @@ export function createTraffic(world, random) {
     car.speed += Math.max(-14 * dt, Math.min(8 * dt, target - car.speed));
     // Move along the road in the heading's direction, keeping pos in sync
     // so the car-ahead check always measures along the same axis.
-    if (car.axis === 'x') car.mesh.position.x += Math.cos(car.heading) * car.speed * dt;
-    else car.mesh.position.z += Math.sin(car.heading) * car.speed * dt;
+    if (car.axis === 'x') car.mesh.position.x += Math.sin(car.heading) * car.speed * dt;
+    else car.mesh.position.z += Math.cos(car.heading) * car.speed * dt;
     car.pos = car.axis === 'x' ? car.mesh.position.x : car.mesh.position.z;
 
     // At an intersection, sometimes turn onto the crossing road. Roads sit
@@ -146,10 +152,10 @@ export function createTraffic(world, random) {
       const nearest = world.nearestRoadPoint(car.mesh.position.x, car.mesh.position.z);
       if (car.axis === 'x') {
         car.mesh.position.z = nearest.z + car.lane;
-        car.heading = car.lane > 0 ? 0 : Math.PI;
+        car.heading = car.lane > 0 ? Math.PI / 2 : -Math.PI / 2;
       } else {
         car.mesh.position.x = nearest.x + car.lane;
-        car.heading = car.lane > 0 ? Math.PI / 2 : -Math.PI / 2;
+        car.heading = car.lane > 0 ? 0 : Math.PI;
       }
       car.lineAt = nearest[car.axis === 'x' ? 'z' : 'x'];
     }

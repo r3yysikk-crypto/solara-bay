@@ -56,10 +56,65 @@ export function roadCentrelines() {
   return lines;
 }
 
+function makeSkyTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 4;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#3f8fd2');
+  grad.addColorStop(0.45, '#8ec9ee');
+  grad.addColorStop(0.72, '#ffd9a0');
+  grad.addColorStop(1, '#ffe8c0');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 4, 256);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export function createWorld(random) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(COLOURS.sky);
   scene.fog = new THREE.Fog(COLOURS.fog, 260, 620);
+
+  // Gradient sky dome: deep blue overhead warming to gold at the horizon.
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(700, 24, 16),
+    new THREE.MeshBasicMaterial({ map: makeSkyTexture(), side: THREE.BackSide, fog: false }),
+  );
+  scene.add(sky);
+
+  // Low sun over the bay, a bright disc with a soft glow sprite.
+  const sunDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(26, 24),
+    new THREE.MeshBasicMaterial({ color: 0xfff6c8, fog: false }),
+  );
+  sunDisc.position.set(-260, 150, 420);
+  sunDisc.lookAt(0, 40, 0);
+  scene.add(sunDisc);
+  const sunGlow = new THREE.Mesh(
+    new THREE.CircleGeometry(60, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.35, fog: false }),
+  );
+  sunGlow.position.set(-262, 150, 422);
+  sunGlow.lookAt(0, 40, 0);
+  scene.add(sunGlow);
+
+  // Drifting clouds: flat white puffs that cross the sky slowly.
+  const clouds = [];
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+  for (let i = 0; i < 9; i++) {
+    const group = new THREE.Group();
+    for (let j = 0; j < 4; j++) {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(random.range(6, 13), 8, 6), cloudMat);
+      puff.position.set(j * random.range(7, 11) - 16, random.range(-1, 2), random.range(-3, 3));
+      puff.scale.y = 0.45;
+      group.add(puff);
+    }
+    group.position.set(random.range(-320, 320), random.range(110, 170), random.range(-320, 320));
+    scene.add(group);
+    clouds.push({ group, speed: random.range(1.2, 3) });
+  }
 
   const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x8a9a6a, 0.95);
   scene.add(hemi);
@@ -92,6 +147,29 @@ export function createWorld(random) {
   water.position.set(0, -0.4, CITY.half + CITY.beachDepth + CITY.waterDepth / 2);
   scene.add(water);
 
+  // Foam where the bay kisses the sand, and two little boats out on it.
+  const foam = new THREE.Mesh(
+    new THREE.PlaneGeometry(CITY.span + 400, 4),
+    new THREE.MeshLambertMaterial({ color: 0xf2fbff, transparent: true, opacity: 0.75 }),
+  );
+  foam.rotation.x = -Math.PI / 2;
+  foam.position.set(0, -0.1, CITY.half + CITY.beachDepth + 1);
+  scene.add(foam);
+  const boats = [];
+  for (const [bx, bz, colour] of [[-90, CITY.half + 90, 0xe8e8e8], [70, CITY.half + 110, 0xf2c230]]) {
+    const boat = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 9), new THREE.MeshLambertMaterial({ color: colour }));
+    hull.position.y = 0.4;
+    boat.add(hull);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.4, 3), new THREE.MeshLambertMaterial({ color: 0x2e6fd8 }));
+    cabin.position.y = 1.6;
+    boat.add(cabin);
+    boat.position.set(bx, -0.2, bz);
+    boat.rotation.y = random.range(0, Math.PI);
+    scene.add(boat);
+    boats.push({ group: boat, phase: random.range(0, Math.PI * 2) });
+  }
+
   // Roads: one long plane per centreline, with a dashed centre line texture.
   const roadTexture = makeRoadTexture();
   const colliders = [];
@@ -118,9 +196,12 @@ export function createWorld(random) {
   }
 
   // Buildings: one or two per block, pushed back from the road by the sidewalk.
+  // Roofs vary — terracotta, flat grey, sand — and a few blocks grow glass
+  // towers, so the skyline reads instead of repeating one box.
   const windowTexture = makeWindowTexture(random);
   const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
   const roofGeo = new THREE.BoxGeometry(1, 1, 1);
+  const roofColours = [0xb0703f, 0x8a7a66, 0x6e7a80, 0xc9a06a, 0x5a6a72];
   const pitch = CITY.blockSize + CITY.roadWidth;
   for (let bx = 0; bx < CITY.blocks; bx++) {
     for (let bz = 0; bz < CITY.blocks; bz++) {
@@ -134,23 +215,42 @@ export function createWorld(random) {
         const cx = blockX + (towers === 2 ? (t === 0 ? 14 : CITY.blockSize - 14) : CITY.blockSize / 2);
         const cz = blockZ + (towers === 2 ? CITY.blockSize / 2 : CITY.blockSize / 2);
         const colour = random.pick(BUILDING_PALETTE);
+        const glassTower = random.chance(0.18);
+        const face = glassTower ? 0x7fb2d8 : colour;
         const mats = [
-          new THREE.MeshLambertMaterial({ map: windowTexture, color: colour }),
-          new THREE.MeshLambertMaterial({ map: windowTexture, color: colour }),
+          new THREE.MeshLambertMaterial({ map: windowTexture, color: face }),
+          new THREE.MeshLambertMaterial({ map: windowTexture, color: face }),
           new THREE.MeshLambertMaterial({ color: 0xc98f5f }),
           new THREE.MeshLambertMaterial({ color: 0x8a7a66 }),
-          new THREE.MeshLambertMaterial({ map: windowTexture, color: colour }),
-          new THREE.MeshLambertMaterial({ map: windowTexture, color: colour }),
+          new THREE.MeshLambertMaterial({ map: windowTexture, color: face }),
+          new THREE.MeshLambertMaterial({ map: windowTexture, color: face }),
         ];
         const tower = new THREE.Mesh(buildingGeo, mats);
         tower.scale.set(w, h, d);
         tower.position.set(cx, h / 2, cz);
         scene.add(tower);
-        // A slightly larger flat roof cap, terracotta like the old town.
-        const roof = new THREE.Mesh(roofGeo, new THREE.MeshLambertMaterial({ color: 0xb0703f }));
+        // A roof cap in a varied colour, plus a rooftop AC box on some.
+        const roof = new THREE.Mesh(roofGeo, new THREE.MeshLambertMaterial({ color: random.pick(roofColours) }));
         roof.scale.set(w + 1, 1.2, d + 1);
         roof.position.set(cx, h + 0.6, cz);
         scene.add(roof);
+        if (random.chance(0.55)) {
+          const ac = new THREE.Mesh(
+            new THREE.BoxGeometry(random.range(2, 4), 1.4, random.range(2, 4)),
+            new THREE.MeshLambertMaterial({ color: 0x9aa4a8 }),
+          );
+          ac.position.set(cx + random.range(-w / 4, w / 4), h + 1.9, cz + random.range(-d / 4, d / 4));
+          scene.add(ac);
+        }
+        // The tallest towers carry an antenna.
+        if (h > 44) {
+          const antenna = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 7, 6),
+            new THREE.MeshLambertMaterial({ color: 0x44484e }),
+          );
+          antenna.position.set(cx, h + 4.5, cz);
+          scene.add(antenna);
+        }
         colliders.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 });
       }
       // Sidewalk slabs frame each block.
@@ -226,9 +326,10 @@ export function createWorld(random) {
     const line = random.pick(roadCentrelines());
     const along = random.range(line.from + 12, line.to - 12);
     const lane = random.pick([-3.4, 3.4]);
+    // Headings follow the car controller: 0 faces +z, PI/2 faces +x.
     return line.axis === 'x'
-      ? { x: along, z: line.at + lane, heading: lane > 0 ? 0 : Math.PI }
-      : { x: line.at + lane, z: along, heading: lane > 0 ? Math.PI / 2 : -Math.PI / 2 };
+      ? { x: along, z: line.at + lane, heading: lane > 0 ? Math.PI / 2 : -Math.PI / 2 }
+      : { x: line.at + lane, z: along, heading: lane > 0 ? 0 : Math.PI };
   }
 
   function nearestRoadPoint(x, z) {
@@ -252,6 +353,18 @@ export function createWorld(random) {
     return best;
   }
 
+  function update(dt, time) {
+    // Clouds drift east; boats bob gently on the bay.
+    for (const cloud of clouds) {
+      cloud.group.position.x += cloud.speed * dt;
+      if (cloud.group.position.x > 360) cloud.group.position.x = -360;
+    }
+    for (const boat of boats) {
+      boat.group.position.y = -0.2 + Math.sin(time * 0.7 + boat.phase) * 0.12;
+      boat.group.rotation.z = Math.sin(time * 0.5 + boat.phase) * 0.02;
+    }
+  }
+
   return {
     scene,
     colliders,
@@ -260,5 +373,6 @@ export function createWorld(random) {
     randomRoadPoint,
     nearestRoadPoint,
     roadCentrelines,
+    update,
   };
 }

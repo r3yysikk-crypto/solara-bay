@@ -6,6 +6,11 @@ export const ACTION_PAUSE = 1 << 1;
 export const ACTION_ENTER_EXIT = 1 << 2;
 export const ACTION_HORN = 1 << 3;
 export const ACTION_RUN = 1 << 4;
+export const ACTION_SHOOT = 1 << 5;
+export const ACTION_MELEE = 1 << 6;
+export const ACTION_WEAPON = 1 << 7;
+export const ACTION_RELOAD = 1 << 8;
+export const ACTION_MISSION = 1 << 9;
 
 const KEY_TO_ACTION = {
   Enter: ACTION_CONFIRM,
@@ -14,6 +19,10 @@ const KEY_TO_ACTION = {
   Escape: ACTION_PAUSE,
   KeyE: ACTION_ENTER_EXIT,
   KeyH: ACTION_HORN,
+  KeyF: ACTION_MELEE,
+  KeyQ: ACTION_WEAPON,
+  KeyR: ACTION_RELOAD,
+  KeyM: ACTION_MISSION,
 };
 
 export function createInput(target) {
@@ -36,6 +45,7 @@ export function createInput(target) {
   function onMouseDown() {
     mouseDown = true;
     pressed.add(ACTION_CONFIRM);
+    pressed.add(ACTION_SHOOT);
   }
   function onBlur() {
     held.clear();

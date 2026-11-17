@@ -22,6 +22,34 @@ export function createCarMesh(colour, options = {}) {
   hood.position.set(0, 0.95, 1.8);
   group.add(hood);
 
+  // Headlights that glow at the front, red taillights at the back, and a
+  // dark grille — the details that make a car read as a car at a glance.
+  const headMat = new THREE.MeshLambertMaterial({ color: 0xfff2b0, emissive: 0xffe9a0, emissiveIntensity: 0.7 });
+  for (const hx of [-0.62, 0.62]) {
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.08), headMat);
+    head.position.set(hx, 0.72, 2.21);
+    group.add(head);
+  }
+  const tailMat = new THREE.MeshLambertMaterial({ color: 0xc81e1e, emissive: 0x881111, emissiveIntensity: 0.6 });
+  for (const tx of [-0.62, 0.62]) {
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.08), tailMat);
+    tail.position.set(tx, 0.72, -2.21);
+    group.add(tail);
+  }
+  const grille = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.22, 0.06), trimMat);
+  grille.position.set(0, 0.62, 2.21);
+  group.add(grille);
+
+  // A soft blob shadow grounds the car — cheap, and it sells the 3D.
+  const blob = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 20),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 }),
+  );
+  blob.rotation.x = -Math.PI / 2;
+  blob.scale.set(1.5, 2.6, 1);
+  blob.position.y = 0.03;
+  group.add(blob);
+
   // A light bar marks police units; a roof stripe marks taxis and the like.
   if (options.lightBar) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.22, 0.5), options.lightBar);
@@ -40,13 +68,19 @@ export function createCarMesh(colour, options = {}) {
 
   const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.3, 10);
   const wheelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+  const hubMat = new THREE.MeshLambertMaterial({ color: 0xb9c0c8 });
   const wheels = [];
   for (const [wx, wz] of [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]]) {
     const wheel = new THREE.Mesh(wheelGeo, wheelMat);
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(wx, 0.38, wz);
     group.add(wheel);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.32, 8), hubMat);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(wx, 0.38, wz);
+    group.add(hub);
     wheels.push(wheel);
+    wheels.push(hub);
   }
   group.userData.wheels = wheels;
   return group;
@@ -65,6 +99,7 @@ export function createVehicle(mesh, start) {
     steer: 0,
     slide: 0, // sideways velocity, m/s
     crashed: 0, // seconds of crash shake left
+    damage: 0, // 0-100: shot up or smashed, smokes when high
     maxSpeed: CAR.maxSpeed,
     accel: CAR.engineAccel,
   };

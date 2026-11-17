@@ -131,6 +131,38 @@ export function createAudio() {
     click() {
       tone(660, 0.06, 0.15, 'sine');
     },
+    shoot() {
+      noiseBurst(0.1, 0.5, 2400);
+      tone(160, 0.09, 0.3, 'square');
+    },
+    shotFar() {
+      noiseBurst(0.12, 0.16, 1400);
+      tone(120, 0.1, 0.1, 'square');
+    },
+    punch() {
+      noiseBurst(0.08, 0.3, 700);
+    },
+    reload() {
+      tone(520, 0.05, 0.16, 'square');
+      tone(780, 0.05, 0.16, 'square');
+    },
+    pickup() {
+      tone(880, 0.1, 0.18, 'sine');
+      tone(1320, 0.16, 0.18, 'sine');
+    },
+    missionStart() {
+      tone(660, 0.12, 0.18, 'triangle');
+      tone(880, 0.18, 0.18, 'triangle');
+    },
+    missionWin() {
+      tone(660, 0.14, 0.2, 'triangle');
+      tone(880, 0.14, 0.2, 'triangle');
+      tone(1100, 0.28, 0.22, 'triangle');
+    },
+    missionFail() {
+      tone(392, 0.25, 0.2, 'triangle');
+      tone(311, 0.4, 0.2, 'triangle');
+    },
     busted() {
       tone(520, 0.5, 0.2, 'triangle');
       tone(392, 0.7, 0.2, 'triangle');

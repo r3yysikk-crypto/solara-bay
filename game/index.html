@@ -11,22 +11,42 @@
 
   /* ---- HUD ---- */
   #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; }
-  #wanted-stars { position: absolute; top: 14px; right: 170px; font-size: 30px; letter-spacing: 4px; color: #ffd23f; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
+  /* Every HUD word carries a hard outline, so it reads over bright sand,
+     white stucco and pale sky alike. */
+  #hud #cash, #hud #speed, #hud #speed-unit, #hud #ammo, #hud #packages,
+  #hud #objective, #hud #health-wrap .label, #hud #wanted-stars {
+    text-shadow: 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 0 4px #000, 0 2px 8px rgba(0,0,0,.9);
+  }
+  #wanted-stars { position: absolute; top: 14px; right: 170px; font-size: 30px; letter-spacing: 4px; color: #ffd23f; }
   #wanted-stars.level-1 { color: #ffd23f; }
   #wanted-stars.level-2 { color: #ff9f1c; }
   #wanted-stars.level-3 { color: #ff3b30; animation: pulse .5s infinite alternate; }
   @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.12); } }
-  #speed { position: absolute; right: 22px; bottom: 18px; font-size: 44px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.8); }
-  #speed-unit { position: absolute; right: 22px; bottom: 64px; font-size: 13px; letter-spacing: 2px; color: #dfe8f0; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  #speed { position: absolute; right: 22px; bottom: 18px; font-size: 44px; font-weight: 700; }
+  #speed-unit { position: absolute; right: 22px; bottom: 64px; font-size: 13px; letter-spacing: 2px; color: #dfe8f0; }
+  #ammo { position: absolute; right: 22px; bottom: 108px; font-size: 15px; font-weight: 700; letter-spacing: 1px; color: #ffe9a0; }
   #health-wrap { position: absolute; left: 18px; bottom: 18px; width: 210px; }
-  #health-wrap .label { font-size: 11px; letter-spacing: 2px; color: #dfe8f0; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  #health-wrap .label { display: inline-block; font-size: 11px; letter-spacing: 2px; color: #fff; background: rgba(0,0,0,.6); padding: 3px 9px; border-radius: 8px; }
   #health-bar { height: 12px; margin-top: 4px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.35); border-radius: 6px; overflow: hidden; }
   #health-fill { height: 100%; width: 100%; background: #37c978; transition: width .2s; }
   #health-fill.low { background: #ff3b30; }
-  #cash { position: absolute; left: 18px; top: 14px; font-size: 22px; font-weight: 700; color: #7dff9b; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
-  #message { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); font-size: 17px; font-weight: 600; background: rgba(0,0,0,.55); padding: 8px 18px; border-radius: 20px; opacity: 0; transition: opacity .3s; white-space: nowrap; }
-  #hint { position: absolute; bottom: 66px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #eef4f8; background: rgba(0,0,0,.45); padding: 6px 14px; border-radius: 14px; opacity: 0; transition: opacity .3s; white-space: nowrap; }
+  #cash { position: absolute; left: 18px; top: 14px; font-size: 22px; font-weight: 700; color: #7dff9b; }
+  #packages { position: absolute; left: 18px; top: 46px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: #7dff9b; }
+  #objective { position: absolute; left: 18px; top: 78px; max-width: 320px; background: rgba(0,0,0,.62); border-left: 4px solid #ffd23f; border-radius: 8px; padding: 10px 14px; display: none; }
+  #objective-title { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: #ffd23f; }
+  #objective-text { font-size: 14px; line-height: 1.45; color: #f2f6f9; margin-top: 3px; }
+  #objective-dist { font-size: 13px; font-weight: 700; color: #bfe3ff; margin-top: 4px; }
+  #message { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); font-size: 17px; font-weight: 600; background: rgba(0,0,0,.55); padding: 8px 18px; border-radius: 20px; opacity: 0; transition: opacity .3s; white-space: nowrap; text-shadow: 0 1px 3px #000; }
+  #hint { position: absolute; bottom: 66px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #eef4f8; background: rgba(0,0,0,.45); padding: 6px 14px; border-radius: 14px; opacity: 0; transition: opacity .3s; white-space: nowrap; text-shadow: 0 1px 3px #000; }
   #minimap { position: absolute; top: 14px; right: 14px; width: 148px; height: 148px; border: 2px solid rgba(255,255,255,.5); border-radius: 8px; background: rgba(10,18,26,.8); }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; display: none; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 3px #000; }
+  #crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
+  #crosshair::after { left: 0; top: 10px; width: 22px; height: 2px; }
+  #hitmarker { position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; opacity: 0; font-size: 28px; line-height: 28px; text-align: center; color: #fff; text-shadow: 0 0 4px #000, 0 1px 0 #000; }
+  #damage-flash { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(255,30,30,.55)); opacity: 0; pointer-events: none; }
+  #damage-numbers { position: absolute; inset: 0; overflow: hidden; }
+  .damage-number { position: absolute; font-size: 20px; font-weight: 800; color: #ffd23f; text-shadow: 0 1px 0 #000, 0 0 4px #000; transform: translate(-50%, -50%); }
 
   /* ---- Screens ---- */
   .screen { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; color: #fff; text-align: center; background: radial-gradient(ellipse at center, rgba(10,25,40,.55), rgba(5,12,20,.88)); z-index: 10; }
@@ -35,8 +55,14 @@
   .screen p { max-width: 560px; font-size: 16px; line-height: 1.6; color: #e6eef5; }
   .screen .controls { font-size: 14px; line-height: 2; color: #c9d8e4; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; padding: 12px 26px; margin: 10px 0 22px; }
   .screen .controls b { color: #ffd23f; }
-  .screen button { pointer-events: auto; font-size: 19px; font-weight: 700; letter-spacing: 1px; color: #12202c; background: #ffd23f; border: none; border-radius: 30px; padding: 14px 44px; cursor: pointer; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+  .screen button { pointer-events: auto; font-size: 19px; font-weight: 700; letter-spacing: 1px; color: #12202c; background: #ffd23f; border: none; border-radius: 30px; padding: 14px 44px; cursor: pointer; box-shadow: 0 6px 24px rgba(0,0,0,.5); margin: 4px; }
   .screen button:hover { background: #ffe06a; }
+  .screen button.secondary { background: #2e6fd8; color: #fff; }
+  .screen button.secondary:hover { background: #4a86e8; }
+  #stats-line { font-size: 13px; color: #bfe3ff; margin: 4px 0 14px; letter-spacing: 1px; }
+  #mission-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 16px; }
+  #mission-list .mission-row { font-size: 15px; padding: 9px 26px; border-radius: 20px; background: rgba(255,210,63,.14); color: #ffe9a0; border: 1px solid rgba(255,210,63,.4); box-shadow: none; }
+  #mission-list .mission-row:hover { background: rgba(255,210,63,.3); }
   #busted-screen h1 { color: #ff3b30; }
 </style>
 </head>
@@ -46,6 +72,12 @@
 
 <div id="hud">
   <div id="cash">$250</div>
+  <div id="packages">PACKAGES 0/10</div>
+  <div id="objective">
+    <div id="objective-title"></div>
+    <div id="objective-text"></div>
+    <div id="objective-dist"></div>
+  </div>
   <div id="wanted-stars" class="wanted">☆☆☆</div>
   <canvas id="minimap" width="148" height="148"></canvas>
   <div id="message"></div>
@@ -54,8 +86,13 @@
     <div class="label">HEALTH</div>
     <div id="health-bar"><div id="health-fill"></div></div>
   </div>
+  <div id="ammo">FISTS</div>
   <div id="speed">0</div>
   <div id="speed-unit">km/h</div>
+  <div id="crosshair"></div>
+  <div id="hitmarker">✕</div>
+  <div id="damage-flash"></div>
+  <div id="damage-numbers"></div>
 </div>
 
 <div id="title-screen" class="screen">
@@ -66,15 +103,20 @@
   dodge the Solara Bay Police Department, and don't get caught.</p>
   <div class="controls">
     <b>W A S D</b> walk / drive &nbsp;·&nbsp; <b>Shift</b> run &nbsp;·&nbsp; <b>E</b> take a car / get out<br>
-    <b>Space</b> handbrake &nbsp;·&nbsp; <b>H</b> horn &nbsp;·&nbsp; <b>P</b> pause
+    <b>Click</b> shoot &nbsp;·&nbsp; <b>F</b> punch &nbsp;·&nbsp; <b>Q</b> switch weapon &nbsp;·&nbsp; <b>R</b> reload<br>
+    <b>Space</b> handbrake &nbsp;·&nbsp; <b>H</b> horn &nbsp;·&nbsp; <b>M</b> start a job &nbsp;·&nbsp; <b>P</b> pause
   </div>
+  <div id="stats-line"></div>
   <button id="start-button">START ENGINE</button>
+  <button id="continue-button" class="secondary" style="display:none">CONTINUE</button>
 </div>
 
 <div id="pause-screen" class="screen">
   <h1>PAUSED</h1>
   <p>The bay waits for no one — but it will wait for you.</p>
+  <div id="mission-list"></div>
   <button id="resume-button">KEEP DRIVING</button>
+  <button id="quit-button" class="secondary">SAVE &amp; QUIT TO TITLE</button>
 </div>
 
 <div id="busted-screen" class="screen">

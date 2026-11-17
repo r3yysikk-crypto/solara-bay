@@ -19,6 +19,34 @@ export function createPlayerMesh() {
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.1, 12), new THREE.MeshLambertMaterial({ color: 0xd83a2e }));
   cap.position.y = 1.95;
   group.add(cap);
+  // Arms at her sides, and a pistol that only shows when she is armed.
+  const armGeo = new THREE.BoxGeometry(0.16, 0.62, 0.16);
+  const armL = new THREE.Mesh(armGeo, jacket);
+  armL.position.set(-0.4, 1.15, 0);
+  group.add(armL);
+  const armR = new THREE.Mesh(armGeo, jacket);
+  armR.position.set(0.4, 1.15, 0);
+  group.add(armR);
+  const pistol = new THREE.Group();
+  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.12, 0.42), new THREE.MeshLambertMaterial({ color: 0x1a1c20 }));
+  pistol.add(gunBody);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.18, 0.1), new THREE.MeshLambertMaterial({ color: 0x2c2f36 }));
+  grip.position.set(0, -0.12, -0.12);
+  pistol.add(grip);
+  pistol.position.set(0.4, 0.85, 0.22);
+  pistol.visible = false;
+  group.add(pistol);
+  group.userData.pistol = pistol;
+  group.userData.armR = armR;
+  group.userData.torso = torso;
+  // A soft blob shadow grounds her too.
+  const blob = new THREE.Mesh(
+    new THREE.CircleGeometry(0.55, 16),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }),
+  );
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.y = 0.02;
+  group.add(blob);
   return group;
 }
 
@@ -32,6 +60,8 @@ export function createPlayer(world) {
     health: PLAYER.maxHealth,
     inCar: null, // the vehicle controller when driving, else null
     moving: false,
+    armed: false, // pistol drawn
+    punchTimer: 0, // seconds of punch swing left
   };
   mesh.position.set(state.x, 0, state.z);
 
@@ -64,6 +94,25 @@ export function createPlayer(world) {
     }
     mesh.position.set(state.x, Math.abs(Math.sin(performance.now() / 120)) * (state.moving ? 0.08 : 0), state.z);
     mesh.rotation.y = state.heading;
+    // A punch swings the right arm forward for a beat.
+    if (state.punchTimer > 0) {
+      state.punchTimer -= dt;
+      const swing = Math.sin((state.punchTimer / 0.28) * Math.PI);
+      mesh.userData.armR.rotation.x = -1.4 * swing;
+      mesh.userData.torso.rotation.x = 0.18 * swing;
+    } else {
+      mesh.userData.armR.rotation.x = 0;
+      mesh.userData.torso.rotation.x = 0;
+    }
+  }
+
+  function setArmed(armed) {
+    state.armed = armed;
+    mesh.userData.pistol.visible = armed;
+  }
+
+  function punch() {
+    state.punchTimer = 0.28;
   }
 
   function enterCar(vehicle) {
@@ -110,6 +159,8 @@ export function createPlayer(world) {
     exitCar,
     hurt,
     heal,
+    setArmed,
+    punch,
   };
 }
 
